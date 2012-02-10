@@ -1,179 +1,29 @@
 <html>
   <head>
-    <title>whiteboard</title>
+    <title>whiteboards</title>
     <script language="javascript" src="js/jquery-1.7.1.js"></script>
     <script language="javascript" src="js/jquery-ui-1.8.16.custom.min.js"></script>
     <script type="text/javascript" src="js/json2.js"></script>
     <script type="text/javascript" src="/_utils/script/jquery.couch.js?0.9.0"></script> 
-    <style>
-      #board {
-        float: left;
-      }
-      #board-area {
-        position: absolute;
-        left: 0px;
-        resize: none;
-        height: 700px;
-        width: 1000px;
-        border: solid 1px #aaa;
-        background: #eee;
-        -webkit-border-radius: 5px;
-        -moz-border-radius: 5px;
-        border-radius: 5px;
-      }
-      .template {
-        display: none;
-        float: left;
-        position: absolute;
-      }
-    </style>
   </head>
   <body>
-    <h1>whiteboard <span id="board_id"></span></h1>
-    <button id="add-textarea">Text</button>&nbsp;
-    <button id="add-image" disabled="true">Image</button>&nbsp;
-    <button id="add-plot" disabled="true">Plot</button>&nbsp;
-    <button id="add-pez">Pez</button>&nbsp;&nbsp;
-    <button id="save">Save</button><br/>
-    <div id="board"><textarea id="board-area"></textarea></div>
+    <h1>whiteboards</h1>
+    <a href="board.html">New</a>
+    <ul id="board-list"></ul>
   </body>
-
-  <div class="template textarea" id="template-textarea" style="border-top:solid 8px #aaa">
-    <textarea style="border:solid 1px #aaa"></textarea>
-  </div>
-
-  <div class="template pez" id="template-pez" style="border-top:solid 8px #aaa">
-    <img src="images/pez.gif" width="100" style="border:solid 1px #aaa"/>
-  </div>
 
   <script>
     var dbname = 'whiteboard';
     var db = $.couch.db(dbname);
 
-    var board_id = getParameterByName('id');
-
-    if (!board_id) {
-      var board_id = $.couch.newUUID();
-    }
-    else {
-      // load existing board
-      console.log(board_id);
-      loadBoard(board_id);
-    }
-
-    var boardPosition = $("#board").position();
-
-    $("#add-textarea").click(function(event) {
-      var e = $("#template-textarea").clone();
-      e.find("textarea").css('height', '100px').css('width', '250px');
-      e.place();
-    });
-
-    $("#add-pez").click(function(event) {
-      $("#template-pez").clone().place();
-    });
-
-    $("#save").click(function(event) {
-      console.log('eh?');
-      saveBoard();
-    });
-
-    function getParameterByName(name)
-    {
-      name = name.replace(/[\[]/, "\\\[").replace(/[\]]/, "\\\]");
-      var regexS = "[\\?&]" + name + "=([^&#]*)";
-      var regex = new RegExp(regexS);
-      var results = regex.exec(window.location.href);
-      if(results == null)
-      return "";
-      else
-      return decodeURIComponent(results[1].replace(/\+/g, " "));
-    }
-
-    function loadBoard(board_id) {
-      db.openDoc(board_id, {
-        success: function(data) {
-          console.log(data)
-          $("#board").find("textarea").val(data.text);
+    db.view("whiteboard/boards", {
+      success: function(data) {
+        for (row in data.rows) {
+          var id = data.rows[row].key;
+          $('<li><a href="board.html?id=' + id + '">' + id + '</a></li>').appendTo("#board-list");
         }
-      });
-
-      db.view("whiteboard/board", {
-        key: board_id,
-        success: function(data) {
-          for (row in data.rows) {
-            console.log(data.rows[row]);
-            var e = $('<div>'+data.rows[row].value.html+'</div>');
-            e.attr('class', data.rows[row].value.cls);
-            e.attr('style', data.rows[row].value.style);
-            e.find('textarea').val(data.rows[row].value.text);
-            e.draggable();
-            e.appendTo("#board");
-          }
-        }
-      });
-    }
-
-    function createOrUpdateDocument(db, doc) {
-      db.openDoc(doc._id, {
-        success: function(data) {
-          doc._rev = data._rev;
-          db.saveDoc(doc, {
-            success: function() {
-              //console.log('updated');
-            },
-            error: function() {
-              //console.log('error updating!');
-          }});
-        },
-        error: function(e) {
-          db.saveDoc(doc, {
-            success: function() {
-              //console.log('saved new');
-            },
-            error: function() {
-              //console.log('error saving new!');
-          }});
-        }
-      });
-    }
-
-    function saveBoard() {
-      $("#board_id").html('<a href="index.html?id=' + board_id + '">' + board_id + '</a>');
-
-      var reportDoc = {
-        _id: board_id,
-        type: 'board',
-        text: $("#board").find('textarea').val()
-      };
-      createOrUpdateDocument(db, reportDoc);
-
-      $(".block").each(function(i) {
-        var blockDoc = {
-          _id: $(this).find('input[name="_id"]').val(),
-          board_id: board_id,
-          type: 'block',
-          text: $(this).find("textarea").val(),
-          html: $(this).html(),
-          style: $(this).attr('style'),
-          cls: $(this).attr('class')
-        };
-        createOrUpdateDocument(db, blockDoc);
-      });
-    }
-
-    $.fn.place = function(id) {
-      if (!id) {
-        var id = $.couch.newUUID();
       }
-      $(this).append('<form style="display:none"><input type="hidden" name="_id" value="'+id+'"/></form>');
-      $(this).appendTo("#board").draggable();
-      $(this).css('top',boardPosition.top).css('left',boardPosition.left);
-      $(this).addClass('block');
-      $(this).attr('id','');
-      $(this).fadeIn('slow');
-    }
-
+    });
   </script>
 </html>
 
