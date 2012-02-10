@@ -1,0 +1,64 @@
+<html>
+  <head>
+    <title>whiteboardi</title>
+    <script language="javascript" src="js/jquery-1.7.1.js"></script>
+    <script language="javascript" src="js/jquery-ui-1.8.16.custom.min.js"></script>
+    <style>
+      #board {
+        float: left;
+      }
+      #board-area {
+        resize: none;
+        height: 700px;
+        width: 1000px;
+        border: solid 1px #aaa;
+        background: #eee;
+        -webkit-border-radius: 5px;
+        -moz-border-radius: 5px;
+        border-radius: 5px;
+      }
+      .template {
+        display: none;
+        float: left;
+        position: absolute;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>whiteboard</h1>
+    <button id="textarea">Text</button>&nbsp;
+    <button id="image" disabled="true">Image</button>&nbsp;
+    <button id="plot" disabled="true">Plot</button>&nbsp;
+    <button id="pez">Pez</button><br/>
+    <div id="board"><textarea id="board-area"></textarea></div>
+  </body>
+
+  <div class="template" id="template-textarea" style="border-top:solid 8px #aaa">
+    <textarea style="border:solid 1px #aaa"></textarea>
+  </div>
+
+  <div class="template" id="template-pez" style="border-top:solid 8px #aaa">
+    <img src="images/pez.gif" width="100" style="border:solid 1px #aaa"/>
+  </div>
+
+  <script>
+    var boardPosition = $("#board").position();
+
+    $("#textarea").click(function(event) {
+      var e = $("#template-textarea").clone();
+      e.find("textarea").css('height', '100px').css('width', '250px');
+      e.place();
+    });
+
+    $("#pez").click(function(event) {
+      $("#template-pez").clone().place();
+    });
+
+    $.fn.place = function() {
+      $(this).appendTo("#board").draggable();
+      $(this).css('top',boardPosition.top).css('left',boardPosition.left);
+      $(this).fadeIn('slow');
+    }
+  </script>
+</html>
+
