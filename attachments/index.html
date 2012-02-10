@@ -10,6 +10,8 @@
         float: left;
       }
       #board-area {
+        position: absolute;
+        left: 0px;
         resize: none;
         height: 700px;
         width: 1000px;
@@ -27,7 +29,7 @@
     </style>
   </head>
   <body>
-    <h1>whiteboard</h1>
+    <h1>whiteboard <span id="board_id"></span></h1>
     <button id="add-textarea">Text</button>&nbsp;
     <button id="add-image" disabled="true">Image</button>&nbsp;
     <button id="add-plot" disabled="true">Plot</button>&nbsp;
@@ -47,7 +49,17 @@
   <script>
     var dbname = 'whiteboard';
     var db = $.couch.db(dbname);
-    var board_id = $.couch.newUUID();
+
+    var board_id = getParameterByName('id');
+
+    if (!board_id) {
+      var board_id = $.couch.newUUID();
+    }
+    else {
+      // load existing board
+      console.log(board_id);
+      loadBoard(board_id);
+    }
 
     var boardPosition = $("#board").position();
 
@@ -65,6 +77,42 @@
       console.log('eh?');
       saveBoard();
     });
+
+    function getParameterByName(name)
+    {
+      name = name.replace(/[\[]/, "\\\[").replace(/[\]]/, "\\\]");
+      var regexS = "[\\?&]" + name + "=([^&#]*)";
+      var regex = new RegExp(regexS);
+      var results = regex.exec(window.location.href);
+      if(results == null)
+      return "";
+      else
+      return decodeURIComponent(results[1].replace(/\+/g, " "));
+    }
+
+    function loadBoard(board_id) {
+      db.openDoc(board_id, {
+        success: function(data) {
+          console.log(data)
+          $("#board").find("textarea").val(data.text);
+        }
+      });
+
+      db.view("whiteboard/board", {
+        key: board_id,
+        success: function(data) {
+          for (row in data.rows) {
+            console.log(data.rows[row]);
+            var e = $('<div>'+data.rows[row].value.html+'</div>');
+            e.attr('class', data.rows[row].value.cls);
+            e.attr('style', data.rows[row].value.style);
+            e.find('textarea').val(data.rows[row].value.text);
+            e.draggable();
+            e.appendTo("#board");
+          }
+        }
+      });
+    }
 
     function createOrUpdateDocument(db, doc) {
       db.openDoc(doc._id, {
@@ -91,8 +139,11 @@
     }
 
     function saveBoard() {
+      $("#board_id").html('<a href="index.html?id=' + board_id + '">' + board_id + '</a>');
+
       var reportDoc = {
         _id: board_id,
+        type: 'board',
         text: $("#board").find('textarea').val()
       };
       createOrUpdateDocument(db, reportDoc);
@@ -100,6 +151,9 @@
       $(".block").each(function(i) {
         var blockDoc = {
           _id: $(this).find('input[name="_id"]').val(),
+          board_id: board_id,
+          type: 'block',
+          text: $(this).find("textarea").val(),
           html: $(this).html(),
           style: $(this).attr('style'),
           cls: $(this).attr('class')
